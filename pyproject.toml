@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "tacos"
+version = "0.0.1"
+description = "Limited functional programming for those that needs to get stuff done"
+authors = ["Sam Pratt <samj.pratt@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

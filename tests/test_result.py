@@ -1,7 +1,13 @@
+import pytest
 from tacos.result import Result, Success, Error
+from tacos.result.exceptions import InvalidResultStateError
 
 
 class RandomError(Exception):
+    pass
+
+
+class OtherError(Exception):
     pass
 
 
@@ -42,6 +48,25 @@ def test_result_with_value_same_as_success() -> None:
     assert Result.with_value(None) != Success(2)
 
 
+def test_success_can_be_unwrapped() -> None:
+    assert Success(1).unwrap() == 1
+    assert Success(None).unwrap() is None
+
+
+def test_success_does_not_have_inner_error() -> None:
+    with pytest.raises(InvalidResultStateError):
+        Success(1).error()
+
+
+def test_error_can_introspect_inner_error() -> None:
+    assert isinstance(Error(RandomError()).error(), RandomError)
+
+
+def test_error_cannot_be_unwrapped() -> None:
+    with pytest.raises(RandomError):
+        Error(RandomError()).unwrap()
+
+
 def test_can_chain_successes() -> None:
     def _multiply(value: int) -> Result[int, RandomError]:
         return Success(value * value)
@@ -74,3 +99,24 @@ def test_chain_halts_with_error_at_start() -> None:
     assert Result.with_error(RandomError()).chain(_add).chain(_add) == Error(
         RandomError()
     )
+
+
+def test_can_handle_single_result() -> None:
+    def _mk_handle(result: Result[int, RandomError]) -> int:
+        return Result.handle(
+            result,
+            on_success=lambda a: a + a,
+            on_error=lambda e: OtherError() if isinstance(e, RandomError) else e,
+        )
+
+    assert _mk_handle(Success(2)) == Success(4).unwrap()
+
+    assert (
+        _mk_handle(
+            Success(2).chain(lambda a: Success(a * a)).chain(lambda a: Success(a * 0))
+        )
+        == Success(0).unwrap()
+    )
+
+    with pytest.raises(OtherError):
+        _mk_handle(Error(RandomError()))

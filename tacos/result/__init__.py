@@ -1,5 +1,16 @@
 from abc import ABCMeta
-from typing import Any, Callable, List, Optional, Sequence, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    List,
+    NoReturn,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+    cast,
+)
+from tacos.result.exceptions import InvalidResultStateError
 
 from tacos.result.internal import _ResultT
 
@@ -33,21 +44,30 @@ class Result(_ResultT[E, A]):
     def with_value(self, value: A) -> "Result[E, A]":
         return Success(value)
 
-    # @staticmethod
-    # def handle(
-    #     results: List["Result[E, A]"],
-    #     on_success: Callable[[A], B],
-    #     on_failure: Callable[[E], E_],
-    # ) -> B:
-    #     """
-    #     Complete a chain of `Result`s, equivalent in understanding to `flatmap`.
+    @staticmethod
+    def handle(
+        result: "Result[E, A]",
+        *,
+        on_success: Callable[[A], B],
+        on_error: Callable[[E], E_],
+    ) -> B:
+        """
+        Complete a chain of `Result`s, equivalent in understanding to `flatmap`.
 
-    #     on_success will transform the success-side (right) into the preferred, unwrapped
-    #     value.
+        on_success will transform the success-side (right) into the preferred, unwrapped
+        value.
 
-    #     on_failure will handle on_failure into the final type before throwing.
-    #     """
-    #     ...
+        on_error will handle on_error into the final type before throwing.
+        """
+        if result.is_success():
+            value = result.unwrap()
+            return on_success(value)
+
+        if result.is_error():
+            error = result.error()
+            raise on_error(error)
+
+        return NotImplementedError()
 
 
 class Success(Result[E, A]):
@@ -64,6 +84,9 @@ class Success(Result[E, A]):
 
     def unwrap(self) -> A:
         return self._inner_value
+
+    def error(self) -> NoReturn:
+        raise InvalidResultStateError()
 
     def chain(self, next: Callable[[A], Result[B, E]]) -> Result[B, E]:
         return next(self._inner_value)
@@ -102,6 +125,9 @@ class Error(Result[E, A]):
     def unwrap(self) -> A:
         raise self._inner_value
 
+    def error(self) -> E:
+        return self._inner_value
+
     def chain(self, _next: Callable[[A], Result[A, E_]]) -> Result[A, E_]:
         return cast(Result[A, E_], self)
 
@@ -112,10 +138,7 @@ class Error(Result[E, A]):
         if not result.is_error():
             return False
 
-        try:
-            result.unwrap()
-        except Exception as e:
-            return self._inner_value.__class__ == e.__class__
+        return self.error().__class__ == result.error().__class__
 
     def __ne__(self, result: Result[E, A]) -> bool:
         return not self == result

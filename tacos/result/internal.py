@@ -20,6 +20,9 @@ class _ResultT(Generic[E, A]):
     def unwrap(self) -> A:
         raise NotImplementedError()
 
+    def error(self) -> E:
+        raise NotImplementedError()
+
     def chain(self, next: Callable[[A], "_ResultT[B, E]"]) -> "_ResultT[B, E]":
         raise NotImplementedError()
 

@@ -1,6 +1,6 @@
 import pytest
-from tacos.result import Result, Success, Error
-from tacos.result.exceptions import InvalidResultStateError
+from duplo.result import Result, Success, Error
+from duplo.result.exceptions import InvalidResultStateError
 
 
 class RandomError(Exception):

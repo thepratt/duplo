@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "tacos"
+name = "duplo"
 version = "0.0.1"
-description = "Limited functional programming for those that needs to get stuff done"
+description = "Small business logic building blocks to get stuff done with simple functional programming"
 authors = ["Sam Pratt <samj.pratt@gmail.com>"]
 license = "MIT"
 

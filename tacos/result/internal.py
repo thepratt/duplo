@@ -1,11 +1,20 @@
 from typing import Callable, Generic, TypeVar
 
 
+class ResultError(Exception):
+    def __init__(self, result: "_ResultT") -> None:
+        self.result = result
+        Exception.init(self)
+
+    def __eq__(self, error) -> bool:
+        return isinstance(error, self)
+
+
 A = TypeVar("A")
 B = TypeVar("B")
 
-E = TypeVar("E", covariant=True)
-E_ = TypeVar("E_", covariant=True)
+E = TypeVar("E", bound=ResultError, covariant=True)
+E_ = TypeVar("E_", bound=ResultError, covariant=True)
 
 
 class _ResultT(Generic[E, A]):

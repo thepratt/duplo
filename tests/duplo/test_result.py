@@ -67,12 +67,15 @@ def test_error_cannot_be_unwrapped() -> None:
         Error(RandomError()).unwrap()
 
 
-def test_can_chain_successes() -> None:
+def test_can_chain_successes_of_different_types() -> None:
     def _multiply(value: int) -> Result[int, RandomError]:
         return Success(value * value)
 
+    def _to_string(value: int) -> Result[str, RandomError]:
+        return Success(str(value))
+
     assert Success(2).chain(_multiply) == Success(4)
-    assert Success(2).chain(_multiply).chain(_multiply) == Success(16)
+    assert Success(2).chain(_multiply).chain(_to_string) == Success("4")
 
 
 def test_can_chain_success_with_value() -> None:
@@ -92,8 +95,9 @@ def test_chain_halts_with_inner_functions() -> None:
     assert Success(2).chain(_error).chain(_multiply) == Error(RandomError())
 
 
+# TODO: types should be collated as a `Union[Error, ...]`
 def test_chain_halts_with_error_at_start() -> None:
-    def _add(value: int) -> Result[int, RandomError]:
+    def _add(value: int) -> Result[int, OtherError]:
         return value + value
 
     assert Result.with_error(RandomError()).chain(_add).chain(_add) == Error(

@@ -19,7 +19,7 @@ class Result(_ResultT[E, A]):
         result: "Result[E, A]",
         *,
         on_success: Callable[[A], B],
-        on_error: Callable[[E], E_],
+        on_error: Callable[[E], NoReturn],
     ) -> B:
         """
         Complete a chain of `Result`s, equivalent in understanding to `flatmap`
@@ -97,7 +97,7 @@ class Error(Result[E, A]):
     def error(self) -> E:
         return self._inner_value
 
-    def chain(self, _next: Callable[[A], Result[A, E_]]) -> Result[A, E_]:
+    def chain(self, _next: Callable[[A], Result[A, E]]) -> Result[A, E_]:
         return cast(Result[A, E_], self)
 
     def __eq__(self, result: Result[E, A]) -> bool:

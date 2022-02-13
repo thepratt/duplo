@@ -1,5 +1,5 @@
 from abc import ABCMeta
-from typing import Any, Callable, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Callable, List, Optional, Sequence, TypeVar, Union, cast
 
 from tacos.result.internal import _ResultT
 
@@ -25,17 +25,6 @@ _Result = Union[E, A]
 class Result(_ResultT[E, A]):
     __slots__ = ()
 
-    # _success: Optional[A]
-    # _error: Optional[E]
-
-    # @property
-    # def is_error(self) -> bool:
-    #     return self._error is None
-
-    # @property
-    # def is_success(self) -> bool:
-    #     return self._success is None
-
     @classmethod
     def with_error(self, error: E) -> "Result[E, A]":
         return Error(error)
@@ -43,12 +32,6 @@ class Result(_ResultT[E, A]):
     @classmethod
     def with_value(self, value: A) -> "Result[E, A]":
         return Success(value)
-
-    # def chain(next: Callable[[Any], _Result]) -> _Result:
-    #     try:
-    #         yield next()
-    #     except E as e:
-    #         return e
 
     # @staticmethod
     # def handle(
@@ -65,15 +48,6 @@ class Result(_ResultT[E, A]):
     #     on_failure will handle on_failure into the final type before throwing.
     #     """
     #     ...
-
-    def __repr__(self) -> str:
-        if self.is_error():
-            return f"Result[E={self._error!r}, A=_]"
-
-        if self.is_success():
-            return f"Result[E=_, A={self._success!r}]"
-
-        return super().__repr__()
 
 
 class Success(Result[E, A]):
@@ -107,7 +81,7 @@ class Success(Result[E, A]):
         return not self == result
 
     def __str__(self) -> str:
-        return f"Success({self._inner_value!r})"
+        return f"<Success: {self._inner_value!r}>"
 
     def __repr__(self) -> str:
         return str(self)
@@ -128,8 +102,8 @@ class Error(Result[E, A]):
     def unwrap(self) -> A:
         raise self._inner_value
 
-    def chain(self, next: Callable[[A], Result[A, E_]]) -> Result[A, E_]:
-        return next(self._inner_value)
+    def chain(self, _next: Callable[[A], Result[A, E_]]) -> Result[A, E_]:
+        return cast(Result[A, E_], self)
 
     def __eq__(self, result: Result[E, A]) -> bool:
         if not isinstance(result, Result):
@@ -147,7 +121,7 @@ class Error(Result[E, A]):
         return not self == result
 
     def __str__(self) -> str:
-        return f"Error({self._inner_value.__class__})"
+        return f"<Error: {self._inner_value.__class__}>"
 
     def __repr__(self) -> str:
         return str(self)

@@ -55,7 +55,7 @@ class Success(Result[E, A]):
         return self._inner_value
 
     def error(self) -> NoReturn:
-        raise InvalidResultStateError()
+        raise InvalidResultStateError(result=self)
 
     def chain(self, next: Callable[[A], Result[B, E]]) -> Result[B, E]:
         return next(self._inner_value)
@@ -97,8 +97,8 @@ class Error(Result[E, A]):
     def error(self) -> E:
         return self._inner_value
 
-    def chain(self, _next: Callable[[A], Result[A, E]]) -> Result[A, E_]:
-        return cast(Result[A, E_], self)
+    def chain(self, _next: Callable[[A], Result[A, E]]) -> Result[A, E]:
+        return cast(Result[A, E], self)
 
     def __eq__(self, result: Result[E, A]) -> bool:
         if not isinstance(result, Result):

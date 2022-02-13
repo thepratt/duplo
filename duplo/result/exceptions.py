@@ -1,4 +1,7 @@
-class InvalidResultStateError(Exception):
+from duplo.result.internal import ResultError
+
+
+class InvalidResultStateError(ResultError):
     """
     Desired operation cannot be perfomed with the existing structure.
 

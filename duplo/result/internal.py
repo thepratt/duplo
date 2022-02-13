@@ -4,7 +4,7 @@ from typing import Callable, Generic, TypeVar
 class ResultError(Exception):
     def __init__(self, result: "_ResultT") -> None:
         self.result = result
-        Exception.init(self)
+        Exception.__init__(self)
 
     def __eq__(self, error) -> bool:
         return isinstance(error, self)
@@ -13,8 +13,8 @@ class ResultError(Exception):
 A = TypeVar("A")
 B = TypeVar("B")
 
-E = TypeVar("E", bound=ResultError, covariant=True)
-E_ = TypeVar("E_", bound=ResultError, covariant=True)
+E = TypeVar("E", bound=Exception, covariant=True)
+E_ = TypeVar("E_", bound=Exception, covariant=True)
 
 
 class _ResultT(Generic[E, A]):

@@ -1,10 +1,27 @@
+from typing import ClassVar, Type
 from .exceptions import InvalidResultStateError
 from .internal import _ResultT, E, A, B, E_
-from typing import Callable, NoReturn, cast
+from typing import Callable, NoReturn, Union, cast, final
 
 
 class Result(_ResultT[E, A]):
     __slots__ = ()
+
+    _inner_value: Union[E, A]
+
+    _success_type: ClassVar[Type["Success"]]
+    _error_type: ClassVar[Type["Error"]]
+
+    def chain(
+        self, next: Callable[[A], "Result[B, Union[E, E_]]"]
+    ) -> "Result[B, Union[E, E_]]":
+        if self.is_success():
+            return next(self._inner_value)
+
+        if self.is_error():
+            return cast(Result[A, Union[E, E_]], self)
+
+        raise InvalidResultStateError(self)
 
     @classmethod
     def with_error(self, error: E) -> "Result[E, A]":
@@ -39,11 +56,15 @@ class Result(_ResultT[E, A]):
         return NotImplementedError()
 
 
+@final
 class Success(Result[E, A]):
     __slots__ = ("_inner_value",)
+    __match_args__ = ("_inner_value",)
+
+    _inner_value: A
 
     def __init__(self, value: A) -> None:
-        self._inner_value: A = value
+        self._inner_value = value
 
     def is_error(self) -> bool:
         return False
@@ -56,9 +77,6 @@ class Success(Result[E, A]):
 
     def error(self) -> NoReturn:
         raise InvalidResultStateError(result=self)
-
-    def chain(self, next: Callable[[A], Result[B, E]]) -> Result[B, E]:
-        return next(self._inner_value)
 
     def __eq__(self, result: Result[E, A]) -> bool:
         if not isinstance(result, Result):
@@ -79,11 +97,15 @@ class Success(Result[E, A]):
         return str(self)
 
 
+@final
 class Error(Result[E, A]):
     __slots__ = ("_inner_value",)
+    __match_args__ = ("_inner_value",)
+
+    _inner_value: E
 
     def __init__(self, error: E) -> None:
-        self._inner_value: E = error
+        self._inner_value = error
 
     def is_error(self) -> bool:
         return True
@@ -96,9 +118,6 @@ class Error(Result[E, A]):
 
     def error(self) -> E:
         return self._inner_value
-
-    def chain(self, _next: Callable[[A], Result[A, E]]) -> Result[A, E]:
-        return cast(Result[A, E], self)
 
     def __eq__(self, result: Result[E, A]) -> bool:
         if not isinstance(result, Result):

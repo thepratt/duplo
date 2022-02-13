@@ -1,4 +1,4 @@
-from typing import Callable, Generic, TypeVar
+from typing import Callable, Generic, TypeVar, Union
 
 
 class ResultError(Exception):
@@ -13,8 +13,8 @@ class ResultError(Exception):
 A = TypeVar("A")
 B = TypeVar("B")
 
-E = TypeVar("E", bound=Exception, covariant=True)
-E_ = TypeVar("E_", bound=Exception, covariant=True)
+E = TypeVar("E", covariant=True)
+E_ = TypeVar("E_", covariant=True)
 
 
 class _ResultT(Generic[E, A]):
@@ -32,7 +32,9 @@ class _ResultT(Generic[E, A]):
     def error(self) -> E:
         raise NotImplementedError()
 
-    def chain(self, next: Callable[[A], "_ResultT[B, E]"]) -> "_ResultT[B, E]":
+    def chain(
+        self, next: Callable[[A], "_ResultT[B, Union[E, E_]]"]
+    ) -> "_ResultT[B, Union[E, E_]]":
         raise NotImplementedError()
 
     def __eq__(self, _result: "_ResultT[E, A]") -> bool:

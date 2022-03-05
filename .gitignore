@@ -95,3 +95,6 @@ dmypy.json
 
 # nix/direnv
 .direnv
+
+# editors
+.vscode/settings.json

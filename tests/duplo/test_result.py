@@ -1,4 +1,4 @@
-from typing import NoReturn, Union, get_args, get_type_hints
+from typing import List, NoReturn, Tuple, Union, get_args, get_type_hints
 
 import pytest
 
@@ -150,3 +150,71 @@ def test_can_handle_single_result() -> None:
 
     with pytest.raises(OtherError):
         _mk_handle(Error(RandomError()))
+
+
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        (
+            [Success(1), Success(2), Success(3)],
+            Success([1, 2, 3]),
+        ),
+        (
+            [Success(1), Success("ok")],
+            Success([1, "ok"]),
+        ),
+    ],
+)
+def test_sequence_combines_non_dependent_successes(
+    input: List[Result], expected: Result
+) -> None:
+    assert expected == Result.sequence(input)
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        [Success(1), Success("gone"), Error(RandomError), Success(123)],
+        [Success(1), Error(RandomError), Error(OtherError)],
+        [Success("gone"), Error(RandomError)],
+    ],
+)
+def test_sequence_returns_first_error(input: List[Result]) -> None:
+    assert Error(RandomError) == Result.sequence(input)
+
+
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        (
+            [Success(1), Success(123)],
+            ([], [1, 123]),
+        ),
+        (
+            [Success(1), Error(RandomError), Error(OtherError)],
+            ([RandomError, OtherError], [1]),
+        ),
+        (
+            [Error(RandomError), Error(OtherError)],
+            ([RandomError, OtherError], []),
+        ),
+        (
+            [Error(RandomError), Error(RandomError), Error(RandomError)],
+            ([RandomError, RandomError, RandomError], []),
+        ),
+        (
+            [],
+            ([], []),
+        ),
+    ],
+)
+def test_sequence_all_collects_all_elements_unwrapped(
+    input: List[Result], expected: Tuple[List, List]
+) -> None:
+    assert expected == Result.sequence_all(input)
+    combined_expected_length = len(expected[0]) + len(expected[1])
+    assert len(input) == combined_expected_length
+
+
+def test_sequence_all_collects_both_sides_unwrapped() -> None:
+    assert [Error(RandomError), Error(OtherError)]

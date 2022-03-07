@@ -2,7 +2,8 @@ from abc import abstractmethod
 from typing import (
     Callable,
     ClassVar,
-    Generic,
+    Iterable,
+    List,
     NoReturn,
     Tuple,
     Type,
@@ -54,6 +55,31 @@ class Result(_ResultT[E, A]):
             return on_error(error)
 
         raise NotImplementedError()
+
+    @staticmethod
+    def sequence(results: Iterable["Result[E, A]"]) -> "Result[E, List[A]]":
+        successes: List[A] = []
+
+        for result in results:
+            if result.is_error():
+                return cast(Result[E, List[A]], result)
+
+            successes.append(result.unwrap())
+
+        return Success(successes)
+
+    @staticmethod
+    def sequence_all(results: Iterable["Result[E, A]"]) -> "Tuple[List[E], List[A]]":
+        errors: List[E] = []
+        successes: List[A] = []
+
+        for result in results:
+            if result.is_error():
+                errors.append(result.error())
+            elif result.is_success():
+                successes.append(result.unwrap())
+
+        return (errors, successes)
 
 
 @final

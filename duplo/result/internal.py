@@ -1,4 +1,4 @@
-from typing import Callable, Generic, TypeVar, Union
+from typing import Generic, TypeVar
 
 
 class ResultError(Exception):

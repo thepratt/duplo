@@ -1,7 +1,18 @@
-from typing import ClassVar, Type
+from abc import abstractmethod
+from typing import (
+    Callable,
+    ClassVar,
+    Generic,
+    NoReturn,
+    Tuple,
+    Type,
+    Union,
+    cast,
+    final,
+)
+
 from .exceptions import InvalidResultStateError
-from .internal import _ResultT, E, A, B, E_
-from typing import Callable, NoReturn, Union, cast, final
+from .internal import E_, A, B, E, _ResultT
 
 
 class Result(_ResultT[E, A]):
@@ -12,24 +23,13 @@ class Result(_ResultT[E, A]):
     _success_type: ClassVar[Type["Success"]]
     _error_type: ClassVar[Type["Error"]]
 
+    @abstractmethod
     def chain(
-        self, next: Callable[[A], "Result[B, Union[E, E_]]"]
-    ) -> "Result[B, Union[E, E_]]":
-        if self.is_success():
-            return next(self._inner_value)
-
-        if self.is_error():
-            return cast(Result[A, Union[E, E_]], self)
-
-        raise InvalidResultStateError(self)
-
-    @classmethod
-    def with_error(self, error: E) -> "Result[E, A]":
-        return Error(error)
-
-    @classmethod
-    def with_value(self, value: A) -> "Result[E, A]":
-        return Success(value)
+        self, _next: Callable[[A], "Result[Union[E, E_], B]"]
+    ) -> "Result[Union[E, E_], B]":
+        raise NotImplementedError(
+            "Cannot be called on a Result directly - use Success or Error"
+        )
 
     @staticmethod
     def handle(
@@ -51,9 +51,9 @@ class Result(_ResultT[E, A]):
 
         if result.is_error():
             error = result.error()
-            raise on_error(error)
+            return on_error(error)
 
-        return NotImplementedError()
+        raise NotImplementedError()
 
 
 @final
@@ -65,6 +65,11 @@ class Success(Result[E, A]):
 
     def __init__(self, value: A) -> None:
         self._inner_value = value
+
+    def chain(
+        self, next: Callable[[A], Result[Union[E, E_], B]]
+    ) -> Result[Union[E, E_], B]:
+        return next(self._inner_value)
 
     def is_error(self) -> bool:
         return False
@@ -78,7 +83,7 @@ class Success(Result[E, A]):
     def error(self) -> NoReturn:
         raise InvalidResultStateError(result=self)
 
-    def __eq__(self, result: Result[E, A]) -> bool:
+    def __eq__(self, result: object) -> bool:
         if not isinstance(result, Result):
             return False
 
@@ -87,7 +92,7 @@ class Success(Result[E, A]):
 
         return self._inner_value == result.unwrap()
 
-    def __ne__(self, result: Result[E, A]) -> bool:
+    def __ne__(self, result: object) -> bool:
         return not self == result
 
     def __str__(self) -> str:
@@ -107,6 +112,11 @@ class Error(Result[E, A]):
     def __init__(self, error: E) -> None:
         self._inner_value = error
 
+    def chain(
+        self, _next: Callable[[A], Result[Union[E, E_], B]]
+    ) -> Result[Union[E, E_], B]:
+        return cast(Result[Union[E, E_], B], self)
+
     def is_error(self) -> bool:
         return True
 
@@ -114,12 +124,12 @@ class Error(Result[E, A]):
         return False
 
     def unwrap(self) -> A:
-        raise self._inner_value
+        raise InvalidResultStateError(result=self)
 
     def error(self) -> E:
         return self._inner_value
 
-    def __eq__(self, result: Result[E, A]) -> bool:
+    def __eq__(self, result: object) -> bool:
         if not isinstance(result, Result):
             return False
 
@@ -128,7 +138,7 @@ class Error(Result[E, A]):
 
         return self.error().__class__ == result.error().__class__
 
-    def __ne__(self, result: Result[E, A]) -> bool:
+    def __ne__(self, result: object) -> bool:
         return not self == result
 
     def __str__(self) -> str:

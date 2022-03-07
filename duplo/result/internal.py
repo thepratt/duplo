@@ -6,15 +6,18 @@ class ResultError(Exception):
         self.result = result
         Exception.__init__(self)
 
-    def __eq__(self, error) -> bool:
-        return isinstance(error, self)
+    def __eq__(self, error: object) -> bool:
+        return isinstance(error, type(self))
 
 
-A = TypeVar("A")
+ErrT = TypeVar("ErrT", bound=ResultError)
+
+
+A = TypeVar("A", covariant=True)
 B = TypeVar("B")
 
 E = TypeVar("E", covariant=True)
-E_ = TypeVar("E_", covariant=True)
+E_ = TypeVar("E_")
 
 
 class _ResultT(Generic[E, A]):
@@ -32,15 +35,10 @@ class _ResultT(Generic[E, A]):
     def error(self) -> E:
         raise NotImplementedError()
 
-    def chain(
-        self, next: Callable[[A], "_ResultT[B, Union[E, E_]]"]
-    ) -> "_ResultT[B, Union[E, E_]]":
+    def __eq__(self, _result: object) -> bool:
         raise NotImplementedError()
 
-    def __eq__(self, _result: "_ResultT[E, A]") -> bool:
-        raise NotImplementedError()
-
-    def __ne__(self, _result: "_ResultT[E, A]") -> bool:
+    def __ne__(self, _result: object) -> bool:
         raise NotImplementedError()
 
     def __str__(self) -> str:

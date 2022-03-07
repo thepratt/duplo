@@ -1,4 +1,4 @@
-from .base import Result, Error, Success
+from .base import Error, Result, Success
 from .internal import ResultError
 
-__all__ = [Error, Success, Result, ResultError]
+__all__ = ["Error", "Success", "Result", "ResultError"]
